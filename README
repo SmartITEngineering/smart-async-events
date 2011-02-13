@@ -1,0 +1,3 @@
+This project creates a generic framework for asynchronous event processing
+using Event Hub and backed by DB for tracking last tracked change per
+client.

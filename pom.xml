@@ -84,5 +84,6 @@
     </plugins>
   </build>
   <modules>
+    <module>async-events-api</module>
   </modules>
 </project>

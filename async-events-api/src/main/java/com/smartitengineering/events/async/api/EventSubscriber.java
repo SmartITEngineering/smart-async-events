@@ -1,9 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!--
+/*
  *
  * This is a framework for Asynchronous Event processing based on event hub.
  * Copyright (C) 2011  Imran M Yousuf (imyousuf@smartitengineering.com)
-
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
@@ -16,24 +15,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>smart-async-events</artifactId>
-    <groupId>com.smartitengineering</groupId>
-    <version>0.1-SNAPSHOT</version>
-  </parent>
-  <groupId>com.smartitengineering.smart-async-events</groupId>
-  <artifactId>async-events-api</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <name>Async Events API</name>
-  <packaging>jar</packaging>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-  </dependencies>
-</project>
+ */
+package com.smartitengineering.events.async.api;
+
+import java.util.Collection;
+
+/**
+ *
+ * @author imyousuf
+ */
+public interface EventSubscriber {
+
+  void addConsumer(EventConsumer consumer);
+
+  void removeConsumer(EventConsumer consumer);
+
+  void removeAllConsumers();
+
+  void poll();
+
+  Collection<EventConsumer> getConsumers();
+
+  String getCronExpressionForPollSubscription();
+}

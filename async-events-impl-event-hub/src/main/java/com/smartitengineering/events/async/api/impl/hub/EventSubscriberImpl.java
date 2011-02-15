@@ -19,6 +19,7 @@
 package com.smartitengineering.events.async.api.impl.hub;
 
 import com.google.inject.Inject;
+import com.google.inject.internal.Nullable;
 import com.google.inject.name.Named;
 import com.smartitengineering.events.async.api.EventConsumer;
 import com.smartitengineering.events.async.api.EventSubscriber;
@@ -40,6 +41,14 @@ import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
 import org.apache.abdera.model.Link;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
+import org.quartz.CronTrigger;
+import org.quartz.Job;
+import org.quartz.JobDetail;
+import org.quartz.JobExecutionContext;
+import org.quartz.JobExecutionException;
+import org.quartz.Scheduler;
+import org.quartz.Trigger;
+import org.quartz.impl.StdSchedulerFactory;
 
 /**
  *
@@ -47,17 +56,23 @@ import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
  */
 public class EventSubscriberImpl implements EventSubscriber {
 
-  @Inject
-  @Named("subscribtionCronExpression")
-  private String cronExpression;
-  @Inject
-  @Named("eventAtomFeedUri")
-  private String eventAtomFeedUri;
   private final List<EventConsumer> consumers = Collections.synchronizedList(new ArrayList<EventConsumer>());
+  private final String cronExpression;
+  private final String eventAtomFeedUri;
   private String nextUri;
 
+  @Inject
+  public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
+                             @Named("eventAtomFeedUri") String eventAtomFeedUri,
+                             @Nullable List<EventConsumer> consumers) throws Exception {
+    this.cronExpression = cronExpression;
+    this.eventAtomFeedUri = eventAtomFeedUri;
+    setInitialConsumers(consumers);
+    initCronJob();
+  }
+
   @Inject(optional = true)
-  public void setInitialConsumers(List<EventConsumer> consumers) {
+  public final void setInitialConsumers(List<EventConsumer> consumers) {
     if (consumers != null && !consumers.isEmpty()) {
       this.consumers.addAll(consumers);
     }
@@ -128,6 +143,22 @@ public class EventSubscriberImpl implements EventSubscriber {
       }
     }
     processFeed(resource.previous(), false);
+  }
+
+  private void initCronJob() throws Exception {
+    Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
+    JobDetail detail = new JobDetail("pollJob", "poll", CronPollJob.class);
+    Trigger trigger = new CronTrigger("pollTrigger", "poll", cronExpression);
+    scheduler.startDelayed(30);
+    scheduler.scheduleJob(detail, trigger);
+  }
+
+  private class CronPollJob implements Job {
+
+    @Override
+    public void execute(JobExecutionContext jec) throws JobExecutionException {
+      poll();
+    }
   }
 
   private static class EventResource extends AbstractClientResource<HubEvent, Resource> {

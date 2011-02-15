@@ -19,6 +19,7 @@
 package com.smartitengineering.events.async.api.impl.hub;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.google.inject.internal.Nullable;
 import com.google.inject.name.Named;
 import com.smartitengineering.events.async.api.EventConsumer;
@@ -31,6 +32,7 @@ import com.smartitengineering.util.rest.client.Resource;
 import com.smartitengineering.util.rest.client.ResourceLink;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.atom.abdera.impl.provider.entity.FeedProvider;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,18 +44,21 @@ import org.apache.abdera.model.Feed;
 import org.apache.abdera.model.Link;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.quartz.CronTrigger;
-import org.quartz.Job;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.JobListener;
 import org.quartz.Scheduler;
 import org.quartz.Trigger;
+import org.quartz.TriggerListener;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.jobs.NoOpJob;
 
 /**
  *
  * @author imyousuf
  */
+@Singleton
 public class EventSubscriberImpl implements EventSubscriber {
 
   private final List<EventConsumer> consumers = Collections.synchronizedList(new ArrayList<EventConsumer>());
@@ -71,7 +76,6 @@ public class EventSubscriberImpl implements EventSubscriber {
     initCronJob();
   }
 
-  @Inject(optional = true)
   public final void setInitialConsumers(List<EventConsumer> consumers) {
     if (consumers != null && !consumers.isEmpty()) {
       this.consumers.addAll(consumers);
@@ -125,10 +129,13 @@ public class EventSubscriberImpl implements EventSubscriber {
         getEntries();
     if (traverseOlder) {
       if (entries != null && !entries.isEmpty()) {
-        processFeed(resource.next(), traverseOlder);
+        final ChannelEventsResource next = resource.next();
+        if (next != null) {
+          processFeed(next, traverseOlder);
+        }
       }
     }
-    if (entries != null && !entries.isEmpty()) {
+    if (entries == null || entries.isEmpty()) {
       nextUri = resource.getUri().toASCIIString();
       return;
     }
@@ -142,22 +149,46 @@ public class EventSubscriberImpl implements EventSubscriber {
         consumer.consume(event.getContentType(), event.getContentAsString());
       }
     }
-    processFeed(resource.previous(), false);
+    final ChannelEventsResource previous = resource.previous();
+    if (previous != null) {
+      processFeed(previous, false);
+    }
   }
 
   private void initCronJob() throws Exception {
     Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
-    JobDetail detail = new JobDetail("pollJob", "poll", CronPollJob.class);
+    final CronPollListener cronPollListener = new CronPollListener();
+    scheduler.addTriggerListener(cronPollListener);
+    JobDetail detail = new JobDetail("pollJob", "poll", NoOpJob.class);
     Trigger trigger = new CronTrigger("pollTrigger", "poll", cronExpression);
-    scheduler.startDelayed(30);
+    trigger.addTriggerListener("poll-listener");
+    scheduler.start();
     scheduler.scheduleJob(detail, trigger);
   }
 
-  private class CronPollJob implements Job {
+  public class CronPollListener implements TriggerListener {
 
     @Override
-    public void execute(JobExecutionContext jec) throws JobExecutionException {
+    public String getName() {
+      return "poll-listener";
+    }
+
+    @Override
+    public void triggerFired(Trigger trgr, JobExecutionContext jec) {
       poll();
+    }
+
+    @Override
+    public boolean vetoJobExecution(Trigger trgr, JobExecutionContext jec) {
+      return false;
+    }
+
+    @Override
+    public void triggerMisfired(Trigger trgr) {
+    }
+
+    @Override
+    public void triggerComplete(Trigger trgr, JobExecutionContext jec, int i) {
     }
   }
 
@@ -170,7 +201,6 @@ public class EventSubscriberImpl implements EventSubscriber {
 
     @Override
     protected void processClientConfig(ClientConfig clientConfig) {
-      clientConfig.getClasses().add(JacksonJsonProvider.class);
     }
 
     @Override
@@ -203,6 +233,8 @@ public class EventSubscriberImpl implements EventSubscriber {
 
     @Override
     protected void processClientConfig(ClientConfig clientConfig) {
+      clientConfig.getClasses().add(FeedProvider.class);
+      clientConfig.getClasses().add(JacksonJsonProvider.class);
     }
 
     @Override

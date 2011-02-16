@@ -27,7 +27,11 @@ import com.smartitengineering.events.async.api.EventSubscriber;
 import com.smartitengineering.util.rest.atom.AbstractFeedClientResource;
 import com.smartitengineering.util.rest.atom.AtomClientUtil;
 import com.smartitengineering.util.rest.client.AbstractClientResource;
+import com.smartitengineering.util.rest.client.ApplicationWideClientFactoryImpl;
+import com.smartitengineering.util.rest.client.ClientFactory;
 import com.smartitengineering.util.rest.client.ClientUtil;
+import com.smartitengineering.util.rest.client.ConfigProcessor;
+import com.smartitengineering.util.rest.client.ConnectionConfig;
 import com.smartitengineering.util.rest.client.Resource;
 import com.smartitengineering.util.rest.client.ResourceLink;
 import com.sun.jersey.api.client.UniformInterfaceException;
@@ -63,14 +67,19 @@ public class EventSubscriberImpl implements EventSubscriber {
   private final List<EventConsumer> consumers = Collections.synchronizedList(new ArrayList<EventConsumer>());
   private final String cronExpression;
   private final String eventAtomFeedUri;
+  private final ConnectionConfig config;
+  private final ClientFactory factory;
   private String nextUri;
 
   @Inject
   public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
                              @Named("eventAtomFeedUri") String eventAtomFeedUri,
+                             ConnectionConfig config,
                              @Nullable List<EventConsumer> consumers) throws Exception {
     this.cronExpression = cronExpression;
     this.eventAtomFeedUri = eventAtomFeedUri;
+    this.config = config;
+    this.factory = ApplicationWideClientFactoryImpl.getClientFactory(this.config, new ConfigProcessorImpl());
     setInitialConsumers(consumers);
     initCronJob();
   }
@@ -102,12 +111,12 @@ public class EventSubscriberImpl implements EventSubscriber {
     boolean traverseOlder = false;
     if (nextUri == null) {
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(eventAtomFeedUri),
-                                                                         MediaType.APPLICATION_ATOM_XML));
+                                                                         MediaType.APPLICATION_ATOM_XML), factory);
       traverseOlder = true;
     }
     else {
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(nextUri),
-                                                                         MediaType.APPLICATION_ATOM_XML));
+                                                                         MediaType.APPLICATION_ATOM_XML), factory);
     }
     processFeed(resource, traverseOlder);
   }
@@ -142,8 +151,8 @@ public class EventSubscriberImpl implements EventSubscriber {
     Collections.reverse(entries);
     for (Entry entry : entries) {
       Link altLink = entry.getAlternateLink();
-      final HubEvent event = new EventResource(resource, AtomClientUtil.convertFromAtomLinkToResourceLink(altLink)).
-          getLastReadStateOfEntity();
+      final HubEvent event = new EventResource(resource, AtomClientUtil.convertFromAtomLinkToResourceLink(altLink),
+                                               factory).getLastReadStateOfEntity();
       for (final EventConsumer consumer : consumers) {
         consumer.consume(event.getContentType(), event.getContentAsString());
       }
@@ -200,9 +209,9 @@ public class EventSubscriberImpl implements EventSubscriber {
 
   private static class EventResource extends AbstractClientResource<HubEvent, Resource> {
 
-    public EventResource(Resource referrer, ResourceLink resouceLink) throws IllegalArgumentException,
-                                                                             UniformInterfaceException {
-      super(referrer, resouceLink);
+    public EventResource(Resource referrer, ResourceLink resouceLink, ClientFactory factory) throws
+        IllegalArgumentException, UniformInterfaceException {
+      super(referrer, resouceLink, null, null, true, factory);
     }
 
     @Override
@@ -225,27 +234,44 @@ public class EventSubscriberImpl implements EventSubscriber {
     }
   }
 
-  private static class ChannelEventsResource extends AbstractFeedClientResource<ChannelEventsResource> {
-
-    public ChannelEventsResource(ResourceLink resouceLink) throws IllegalArgumentException,
-                                                                  UniformInterfaceException {
-      this(null, resouceLink);
-    }
-
-    private ChannelEventsResource(Resource referrer, ResourceLink resouceLink) throws IllegalArgumentException,
-                                                                                      UniformInterfaceException {
-      super(referrer, resouceLink);
-    }
+  private static class ConfigProcessorImpl implements ConfigProcessor {
 
     @Override
-    protected void processClientConfig(ClientConfig clientConfig) {
+    public void process(ClientConfig clientConfig) {
       clientConfig.getClasses().add(FeedProvider.class);
       clientConfig.getClasses().add(JacksonJsonProvider.class);
     }
 
     @Override
+    public boolean equals(Object obj) {
+      return obj instanceof ConfigProcessorImpl;
+    }
+
+    @Override
+    public int hashCode() {
+      return 1;
+    }
+  }
+
+  private static class ChannelEventsResource extends AbstractFeedClientResource<ChannelEventsResource> {
+
+    public ChannelEventsResource(ResourceLink resouceLink, ClientFactory factory) throws IllegalArgumentException,
+                                                                                         UniformInterfaceException {
+      this(null, resouceLink, factory);
+    }
+
+    private ChannelEventsResource(Resource referrer, ResourceLink resouceLink, ClientFactory factory) throws
+        IllegalArgumentException, UniformInterfaceException {
+      super(referrer, resouceLink, true, factory);
+    }
+
+    @Override
+    protected void processClientConfig(ClientConfig clientConfig) {
+    }
+
+    @Override
     protected ChannelEventsResource instantiatePageableResource(ResourceLink link) {
-      return new ChannelEventsResource(this, link);
+      return new ChannelEventsResource(this, link, getClientFactory());
     }
   }
 }

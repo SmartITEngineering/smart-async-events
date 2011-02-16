@@ -90,7 +90,7 @@ public class AppTest {
      * Ensure DIs done
      */
     Properties properties = new Properties();
-    properties.setProperty(GuiceUtil.CONTEXT_NAME_PROP, "com.smartitengineering.user.client");
+    properties.setProperty(GuiceUtil.CONTEXT_NAME_PROP, "com.smartitengineering");
     properties.setProperty(GuiceUtil.IGNORE_MISSING_DEP_PROP, Boolean.TRUE.toString());
     properties.setProperty(GuiceUtil.MODULES_LIST_PROP, ConfigurationModule.class.getName());
     final GuiceUtil instance = GuiceUtil.getInstance(properties);
@@ -143,7 +143,7 @@ public class AppTest {
     protected void configure() {
       ConnectionConfig config = new ConnectionConfig();
       config.setBasicUri("");
-      config.setContextPath("/");
+      config.setContextPath("/hub/");
       config.setHost("localhost");
       config.setPort(PORT);
       bind(ConnectionConfig.class).toInstance(config);

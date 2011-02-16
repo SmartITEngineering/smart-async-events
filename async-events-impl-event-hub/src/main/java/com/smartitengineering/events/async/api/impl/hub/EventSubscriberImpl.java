@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.ws.rs.core.MediaType;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
@@ -46,8 +47,6 @@ import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.JobListener;
 import org.quartz.Scheduler;
 import org.quartz.Trigger;
 import org.quartz.TriggerListener;
@@ -168,6 +167,8 @@ public class EventSubscriberImpl implements EventSubscriber {
 
   public class CronPollListener implements TriggerListener {
 
+    private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
+
     @Override
     public String getName() {
       return "poll-listener";
@@ -175,7 +176,12 @@ public class EventSubscriberImpl implements EventSubscriber {
 
     @Override
     public void triggerFired(Trigger trgr, JobExecutionContext jec) {
-      poll();
+      if (atomicBoolean.get()) {
+        if (atomicBoolean.compareAndSet(true, false)) {
+          poll();
+          atomicBoolean.set(true);
+        }
+      }
     }
 
     @Override

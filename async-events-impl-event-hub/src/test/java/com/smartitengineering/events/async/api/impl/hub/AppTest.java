@@ -19,7 +19,6 @@
 package com.smartitengineering.events.async.api.impl.hub;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
@@ -86,13 +85,7 @@ public class AppTest {
     client.resource("http://localhost:10080/hub/api/channels/test").header(HttpHeaders.CONTENT_TYPE,
                                                                            MediaType.APPLICATION_JSON).put(
         "{\"name\":\"test\"}");
-
-    /*
-     * Initialize injector
-     */
-    injector = Guice.createInjector(new ConfigurationModule());
-    publisher = injector.getInstance(EventPublisher.class);
-    subscriber = injector.getInstance(EventSubscriber.class);
+    LOGGER.info("Created test channel!");
     /*
      * Ensure DIs done
      */
@@ -100,7 +93,16 @@ public class AppTest {
     properties.setProperty(GuiceUtil.CONTEXT_NAME_PROP, "com.smartitengineering.user.client");
     properties.setProperty(GuiceUtil.IGNORE_MISSING_DEP_PROP, Boolean.TRUE.toString());
     properties.setProperty(GuiceUtil.MODULES_LIST_PROP, ConfigurationModule.class.getName());
-    GuiceUtil.getInstance(properties).register();
+    final GuiceUtil instance = GuiceUtil.getInstance(properties);
+    instance.register();
+    LOGGER.info("Register injectors!");
+    /*
+     * Initialize injector
+     */
+    injector = instance.getInjectors()[0];
+    publisher = injector.getInstance(EventPublisher.class);
+    subscriber = injector.getInstance(EventSubscriber.class);
+    LOGGER.info("Initialize publisher and subscriber!");
   }
 
   @AfterClass
@@ -124,10 +126,12 @@ public class AppTest {
     };
     subscriber.addConsumer(consumer);
     publisher.publishEvent(textPlain, message);
-    Thread.sleep(8000);
+    LOGGER.info("Publish first event!");
+    Thread.sleep(1200);
     Assert.assertEquals(1, mutableInt.intValue());
     publisher.publishEvent(textPlain, message);
-    Thread.sleep(6000);
+    LOGGER.info("Publish second event!");
+    Thread.sleep(1200);
     Assert.assertEquals(2, mutableInt.intValue());
     subscriber.removeConsumer(consumer);
 
@@ -147,7 +151,7 @@ public class AppTest {
           "http://localhost:10080/hub/api/channels/test/hub");
       bind(String.class).annotatedWith(Names.named("eventAtomFeedUri")).toInstance(
           "http://localhost:10080/hub/api/channels/test/events");
-      bind(String.class).annotatedWith(Names.named("subscribtionCronExpression")).toInstance("0/5 * * * * ?");
+      bind(String.class).annotatedWith(Names.named("subscribtionCronExpression")).toInstance("0/1 * * * * ?");
       bind(new TypeLiteral<List<EventConsumer>>() {
       }).toInstance(Collections.<EventConsumer>emptyList());
       bind(EventPublisher.class).to(EventPublisherImpl.class);

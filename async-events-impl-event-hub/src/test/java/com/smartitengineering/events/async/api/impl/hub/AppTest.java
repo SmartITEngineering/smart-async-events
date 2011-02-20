@@ -30,6 +30,7 @@ import com.smartitengineering.util.rest.client.ApplicationWideClientFactoryImpl;
 import com.smartitengineering.util.rest.client.ConnectionConfig;
 import com.smartitengineering.util.rest.client.jersey.cache.CacheableClient;
 import com.sun.jersey.api.client.Client;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
@@ -152,7 +153,7 @@ public class AppTest {
       bind(String.class).annotatedWith(Names.named("eventAtomFeedUri")).toInstance(
           "http://localhost:10080/hub/api/channels/test/events");
       bind(String.class).annotatedWith(Names.named("subscribtionCronExpression")).toInstance("0/1 * * * * ?");
-      bind(new TypeLiteral<List<EventConsumer>>() {
+      bind(new TypeLiteral<Collection<EventConsumer>>() {
       }).toInstance(Collections.<EventConsumer>emptyList());
       bind(EventPublisher.class).to(EventPublisherImpl.class);
       bind(EventSubscriber.class).to(EventSubscriberImpl.class);

@@ -75,7 +75,7 @@ public class EventSubscriberImpl implements EventSubscriber {
   public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
                              @Named("eventAtomFeedUri") String eventAtomFeedUri,
                              ConnectionConfig config,
-                             @Nullable List<EventConsumer> consumers) throws Exception {
+                             @Nullable Collection<EventConsumer> consumers) throws Exception {
     this.cronExpression = cronExpression;
     this.eventAtomFeedUri = eventAtomFeedUri;
     this.config = config;
@@ -84,7 +84,7 @@ public class EventSubscriberImpl implements EventSubscriber {
     initCronJob();
   }
 
-  public final void setInitialConsumers(List<EventConsumer> consumers) {
+  public final void setInitialConsumers(Collection<EventConsumer> consumers) {
     if (consumers != null && !consumers.isEmpty()) {
       this.consumers.addAll(consumers);
     }

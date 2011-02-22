@@ -147,12 +147,16 @@ public class EventSubscriberImpl implements EventSubscriber {
       nextUri = resource.getUri().toASCIIString();
       return;
     }
-    //Reverse it to get the older event first
-    Collections.reverse(entries);
+    List<HubEvent> events = new ArrayList<HubEvent>();
     for (Entry entry : entries) {
       Link altLink = entry.getAlternateLink();
       final HubEvent event = new EventResource(resource, AtomClientUtil.convertFromAtomLinkToResourceLink(altLink),
                                                factory).getLastReadStateOfEntity();
+      events.add(event);
+    }
+    //Reverse it to get the older event first
+    Collections.reverse(events);
+    for (HubEvent event : events) {
       for (final EventConsumer consumer : consumers) {
         consumer.consume(event.getContentType(), event.getContentAsString());
       }

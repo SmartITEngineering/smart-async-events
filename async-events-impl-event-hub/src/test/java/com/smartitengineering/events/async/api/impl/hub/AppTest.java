@@ -130,9 +130,13 @@ public class AppTest {
     Thread.sleep(1200);
     Assert.assertEquals(1, mutableInt.intValue());
     publisher.publishEvent(textPlain, message);
-    LOGGER.info("Publish second event!");
+    publisher.publishEvent(textPlain, message);
+    publisher.publishEvent(textPlain, message);
+    publisher.publishEvent(textPlain, message);
+    publisher.publishEvent(textPlain, message);
+    LOGGER.info("Publish 5 more events!");
     Thread.sleep(1200);
-    Assert.assertEquals(2, mutableInt.intValue());
+    Assert.assertEquals(6, mutableInt.intValue());
     subscriber.removeConsumer(consumer);
 
   }

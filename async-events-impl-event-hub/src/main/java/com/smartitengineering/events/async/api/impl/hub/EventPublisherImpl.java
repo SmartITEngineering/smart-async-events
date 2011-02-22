@@ -28,6 +28,8 @@ import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -41,16 +43,21 @@ public class EventPublisherImpl implements EventPublisher {
   private String eventHubChannelHubUri;
   private final Client cacheableClient = CacheableClient.create();
   private WebResource channelHubResource;
+  protected final transient Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
   public boolean publishEvent(String eventContentType, String eventMessage) {
     if (channelHubResource == null) {
       channelHubResource = cacheableClient.resource(eventHubChannelHubUri);
     }
+    if (logger.isInfoEnabled()) {
+      logger.info("Publishing message " + eventContentType + " of type " + eventContentType);
+    }
     ClientResponse response = channelHubResource.accept(MediaType.MEDIA_TYPE_WILDCARD).header(HttpHeaders.CONTENT_TYPE,
                                                                                               eventContentType).post(
         ClientResponse.class, eventMessage);
     final int status = response.getStatus();
+    response.close();
     return status >= 200 && status < 400;
   }
 }

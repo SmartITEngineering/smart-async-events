@@ -37,4 +37,8 @@ public interface EventSubscriber {
   Collection<EventConsumer> getConsumers();
 
   String getCronExpressionForPollSubscription();
+
+  SubscriptionPreconditionChecker getPreconditionChecker();
+
+  UriStorer getNextUriStorer();
 }

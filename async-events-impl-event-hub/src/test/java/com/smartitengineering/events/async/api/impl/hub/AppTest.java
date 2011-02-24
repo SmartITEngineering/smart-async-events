@@ -25,6 +25,7 @@ import com.google.inject.name.Names;
 import com.smartitengineering.events.async.api.EventConsumer;
 import com.smartitengineering.events.async.api.EventPublisher;
 import com.smartitengineering.events.async.api.EventSubscriber;
+import com.smartitengineering.events.async.api.UriStorer;
 import com.smartitengineering.util.bean.guice.GuiceUtil;
 import com.smartitengineering.util.rest.client.ApplicationWideClientFactoryImpl;
 import com.smartitengineering.util.rest.client.ConnectionConfig;
@@ -120,8 +121,9 @@ public class AppTest {
       @Override
       public void consume(String eventContentType, String eventMessage) {
         Assert.assertEquals(textPlain, eventContentType);
-        Assert.assertEquals(message, eventMessage);
+        Assert.assertTrue(eventMessage.startsWith(message));
         mutableInt.add(1);
+        LOGGER.info("Consuming message " + eventMessage);
       }
     };
     subscriber.addConsumer(consumer);
@@ -129,14 +131,13 @@ public class AppTest {
     LOGGER.info("Publish first event!");
     Thread.sleep(1200);
     Assert.assertEquals(1, mutableInt.intValue());
-    publisher.publishEvent(textPlain, message);
-    publisher.publishEvent(textPlain, message);
-    publisher.publishEvent(textPlain, message);
-    publisher.publishEvent(textPlain, message);
-    publisher.publishEvent(textPlain, message);
-    LOGGER.info("Publish 5 more events!");
-    Thread.sleep(1200);
-    Assert.assertEquals(6, mutableInt.intValue());
+    final int count = 20;
+    for (int i = 0; i < count; i++) {
+      publisher.publishEvent(textPlain, message + " " + i);
+    }
+    LOGGER.info("Publish " + count + " more events!");
+    Thread.sleep(2500);
+    Assert.assertEquals(count + 1, mutableInt.intValue());
     subscriber.removeConsumer(consumer);
 
   }
@@ -158,6 +159,9 @@ public class AppTest {
       bind(String.class).annotatedWith(Names.named("subscribtionCronExpression")).toInstance("0/1 * * * * ?");
       bind(new TypeLiteral<Collection<EventConsumer>>() {
       }).toInstance(Collections.<EventConsumer>emptyList());
+      bind(UriStorer.class).to(FileSystemUriStorer.class);
+      bind(String.class).annotatedWith(Names.named("pathToFolderOfUriStorer")).toInstance("./target/store/");
+      bind(String.class).annotatedWith(Names.named("fileNameOfUriStorer")).toInstance("testStore.txt");
       bind(EventPublisher.class).to(EventPublisherImpl.class);
       bind(EventSubscriber.class).to(EventSubscriberImpl.class);
     }

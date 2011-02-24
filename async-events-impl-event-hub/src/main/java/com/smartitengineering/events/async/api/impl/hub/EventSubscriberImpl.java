@@ -24,6 +24,8 @@ import com.google.inject.internal.Nullable;
 import com.google.inject.name.Named;
 import com.smartitengineering.events.async.api.EventConsumer;
 import com.smartitengineering.events.async.api.EventSubscriber;
+import com.smartitengineering.events.async.api.SubscriptionPreconditionChecker;
+import com.smartitengineering.events.async.api.UriStorer;
 import com.smartitengineering.util.rest.atom.AbstractFeedClientResource;
 import com.smartitengineering.util.rest.atom.AtomClientUtil;
 import com.smartitengineering.util.rest.client.AbstractClientResource;
@@ -47,6 +49,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
 import org.apache.abdera.model.Link;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
 import org.quartz.CronTrigger;
 import org.quartz.JobDetail;
@@ -56,6 +59,8 @@ import org.quartz.Trigger;
 import org.quartz.TriggerListener;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.jobs.NoOpJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -69,17 +74,23 @@ public class EventSubscriberImpl implements EventSubscriber {
   private final String eventAtomFeedUri;
   private final ConnectionConfig config;
   private final ClientFactory factory;
-  private String nextUri;
+  @Inject(optional = true)
+  private SubscriptionPreconditionChecker checker;
+  @Inject
+  private final UriStorer storer;
+  protected final transient Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
   public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
                              @Named("eventAtomFeedUri") String eventAtomFeedUri,
                              ConnectionConfig config,
+                             @Nullable UriStorer storer,
                              @Nullable Collection<EventConsumer> consumers) throws Exception {
     this.cronExpression = cronExpression;
     this.eventAtomFeedUri = eventAtomFeedUri;
     this.config = config;
     this.factory = ApplicationWideClientFactoryImpl.getClientFactory(this.config, new ConfigProcessorImpl());
+    this.storer = storer;
     setInitialConsumers(consumers);
     initCronJob();
   }
@@ -107,14 +118,24 @@ public class EventSubscriberImpl implements EventSubscriber {
 
   @Override
   public void poll() {
+    if (getPreconditionChecker() != null && !getPreconditionChecker().isPreconditionMet()) {
+      logger.warn("Aborting poll as pre-condition for polling not met!");
+    }
     ChannelEventsResource resource;
     boolean traverseOlder = false;
-    if (nextUri == null) {
+    final String nextUri = storer.getNextUri();
+    if (StringUtils.isBlank(nextUri)) {
+      if (logger.isInfoEnabled()) {
+        logger.info("URI being polled is " + eventAtomFeedUri);
+      }
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(eventAtomFeedUri),
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
       traverseOlder = true;
     }
     else {
+      if (logger.isInfoEnabled()) {
+        logger.info("URI being polled is " + nextUri);
+      }
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(nextUri),
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
     }
@@ -132,6 +153,9 @@ public class EventSubscriberImpl implements EventSubscriber {
   }
 
   private void processFeed(ChannelEventsResource resource, boolean traverseOlder) {
+    if (logger.isInfoEnabled()) {
+      logger.info("RESOURCE being processed is " + resource.getUri().toASCIIString());
+    }
     final Feed lastReadStateOfEntity = resource.getLastReadStateOfEntity();
     final List<Entry> entries = lastReadStateOfEntity == null ? Collections.<Entry>emptyList() : lastReadStateOfEntity.
         getEntries();
@@ -144,7 +168,7 @@ public class EventSubscriberImpl implements EventSubscriber {
       }
     }
     if (entries == null || entries.isEmpty()) {
-      nextUri = resource.getUri().toASCIIString();
+      storer.storeNextUri(resource.getUri().toASCIIString());
       return;
     }
     List<HubEvent> events = new ArrayList<HubEvent>();
@@ -176,6 +200,16 @@ public class EventSubscriberImpl implements EventSubscriber {
     trigger.addTriggerListener("poll-listener");
     scheduler.start();
     scheduler.scheduleJob(detail, trigger);
+  }
+
+  @Override
+  public SubscriptionPreconditionChecker getPreconditionChecker() {
+    return checker;
+  }
+
+  @Override
+  public UriStorer getNextUriStorer() {
+    return storer;
   }
 
   public class CronPollListener implements TriggerListener {

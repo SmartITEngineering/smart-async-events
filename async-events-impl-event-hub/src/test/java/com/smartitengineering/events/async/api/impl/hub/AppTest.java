@@ -116,6 +116,8 @@ public class AppTest {
     final String textPlain = "text/plain";
     final String message = "Message";
     final MutableInt mutableInt = new MutableInt();
+    final MutableInt startCounter = new MutableInt();
+    final MutableInt endCounter = new MutableInt();
     EventConsumer consumer = new EventConsumer() {
 
       @Override
@@ -124,6 +126,16 @@ public class AppTest {
         Assert.assertTrue(eventMessage.startsWith(message));
         mutableInt.add(1);
         LOGGER.info("Consuming message " + eventMessage);
+      }
+
+      @Override
+      public void startConsumption() {
+        startCounter.increment();
+      }
+
+      @Override
+      public void endConsumption() {
+        endCounter.increment();
       }
     };
     subscriber.addConsumer(consumer);
@@ -138,6 +150,8 @@ public class AppTest {
     LOGGER.info("Publish " + count + " more events!");
     Thread.sleep(2500);
     Assert.assertEquals(count + 1, mutableInt.intValue());
+    Assert.assertEquals(2, startCounter.intValue());
+    Assert.assertEquals(2, endCounter.intValue());
     subscriber.removeConsumer(consumer);
 
   }

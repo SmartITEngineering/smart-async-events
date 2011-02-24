@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.ws.rs.core.MediaType;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.model.Feed;
@@ -78,6 +79,7 @@ public class EventSubscriberImpl implements EventSubscriber {
   private SubscriptionPreconditionChecker checker;
   @Inject
   private final UriStorer storer;
+  private AtomicInteger integer = new AtomicInteger(0);
   protected final transient Logger logger = LoggerFactory.getLogger(getClass());
 
   @Inject
@@ -121,6 +123,7 @@ public class EventSubscriberImpl implements EventSubscriber {
     if (getPreconditionChecker() != null && !getPreconditionChecker().isPreconditionMet()) {
       logger.warn("Aborting poll as pre-condition for polling not met!");
     }
+    integer.set(0);
     ChannelEventsResource resource;
     boolean traverseOlder = false;
     final String nextUri = storer.getNextUri();
@@ -140,6 +143,14 @@ public class EventSubscriberImpl implements EventSubscriber {
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
     }
     processFeed(resource, traverseOlder);
+    if (integer.get() > 0) {
+      for (final EventConsumer consumer : consumers) {
+        consumer.endConsumption();
+      }
+      if(logger.isInfoEnabled()) {
+        logger.info("" + integer.get() + " Events processed");
+      }
+    }
   }
 
   @Override
@@ -180,6 +191,12 @@ public class EventSubscriberImpl implements EventSubscriber {
     }
     //Reverse it to get the older event first
     Collections.reverse(events);
+    if (integer.get() == 0) {
+      for (final EventConsumer consumer : consumers) {
+        consumer.startConsumption();
+      }
+    }
+    integer.addAndGet(events.size());
     for (HubEvent event : events) {
       for (final EventConsumer consumer : consumers) {
         consumer.consume(event.getContentType(), event.getContentAsString());

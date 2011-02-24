@@ -24,5 +24,9 @@ package com.smartitengineering.events.async.api;
  */
 public interface EventConsumer {
 
+  void startConsumption();
+
   void consume(String eventContentType, String eventMessage);
+
+  void endConsumption();
 }

@@ -134,7 +134,8 @@ public class AppTest {
       }
 
       @Override
-      public void endConsumption() {
+      public void endConsumption(boolean prematureEnd) {
+        Assert.assertFalse(prematureEnd);
         endCounter.increment();
       }
     };

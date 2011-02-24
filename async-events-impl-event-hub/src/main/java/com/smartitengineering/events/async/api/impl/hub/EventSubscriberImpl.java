@@ -142,12 +142,12 @@ public class EventSubscriberImpl implements EventSubscriber {
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(nextUri),
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
     }
-    processFeed(resource, traverseOlder);
+    boolean prematureEnd = processFeed(resource, traverseOlder);
     if (integer.get() > 0) {
       for (final EventConsumer consumer : consumers) {
-        consumer.endConsumption();
+        consumer.endConsumption(!prematureEnd);
       }
-      if(logger.isInfoEnabled()) {
+      if (logger.isInfoEnabled()) {
         logger.info("" + integer.get() + " Events processed");
       }
     }
@@ -163,7 +163,7 @@ public class EventSubscriberImpl implements EventSubscriber {
     return cronExpression;
   }
 
-  private void processFeed(ChannelEventsResource resource, boolean traverseOlder) {
+  private boolean processFeed(ChannelEventsResource resource, boolean traverseOlder) {
     if (logger.isInfoEnabled()) {
       logger.info("RESOURCE being processed is " + resource.getUri().toASCIIString());
     }
@@ -180,7 +180,7 @@ public class EventSubscriberImpl implements EventSubscriber {
     }
     if (entries == null || entries.isEmpty()) {
       storer.storeNextUri(resource.getUri().toASCIIString());
-      return;
+      return true;
     }
     List<HubEvent> events = new ArrayList<HubEvent>();
     for (Entry entry : entries) {
@@ -199,12 +199,21 @@ public class EventSubscriberImpl implements EventSubscriber {
     integer.addAndGet(events.size());
     for (HubEvent event : events) {
       for (final EventConsumer consumer : consumers) {
-        consumer.consume(event.getContentType(), event.getContentAsString());
+        try {
+          consumer.consume(event.getContentType(), event.getContentAsString());
+        }
+        catch (Exception ex) {
+          logger.warn("Consumer threw exception to halt subscription", ex);
+          return false;
+        }
       }
     }
     final ChannelEventsResource previous = resource.previous();
     if (previous != null) {
-      processFeed(previous, false);
+      return processFeed(previous, false);
+    }
+    else {
+      return true;
     }
   }
 

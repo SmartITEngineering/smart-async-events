@@ -28,5 +28,5 @@ public interface EventConsumer {
 
   void consume(String eventContentType, String eventMessage);
 
-  void endConsumption();
+  void endConsumption(boolean prematureEnd);
 }

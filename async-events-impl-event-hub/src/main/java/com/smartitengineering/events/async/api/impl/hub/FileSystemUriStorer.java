@@ -56,8 +56,12 @@ public class FileSystemUriStorer implements UriStorer {
       }
     }
     uriStorage = new File(file, fileName);
-    storeNextUri("");
-    readLineFromFile();
+    if (uriStorage.exists()) {
+      readLineFromFile();
+    }
+    else {
+      storeNextUri("");
+    }
   }
 
   @Override

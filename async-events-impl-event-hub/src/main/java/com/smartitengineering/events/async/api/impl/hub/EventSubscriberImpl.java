@@ -86,7 +86,7 @@ public class EventSubscriberImpl implements EventSubscriber {
   public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
                              @Named("eventAtomFeedUri") String eventAtomFeedUri,
                              ConnectionConfig config,
-                             @Nullable UriStorer storer,
+                             UriStorer storer,
                              @Nullable Collection<EventConsumer> consumers) throws Exception {
     this.cronExpression = cronExpression;
     this.eventAtomFeedUri = eventAtomFeedUri;

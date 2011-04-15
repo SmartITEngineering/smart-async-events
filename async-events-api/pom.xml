@@ -22,11 +22,11 @@
   <parent>
     <artifactId>smart-async-events</artifactId>
     <groupId>com.smartitengineering</groupId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.1.1</version>
   </parent>
   <groupId>com.smartitengineering.smart-async-events</groupId>
   <artifactId>async-events-api</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.1</version>
   <name>Async Events API</name>
   <packaging>jar</packaging>
   <dependencies>

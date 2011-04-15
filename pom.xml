@@ -27,7 +27,7 @@
   <groupId>com.smartitengineering</groupId>
   <artifactId>smart-async-events</artifactId>
   <packaging>pom</packaging>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.1.1</version>
   <name>Smart Async Events</name>
   <inceptionYear>2011</inceptionYear>
   <description>

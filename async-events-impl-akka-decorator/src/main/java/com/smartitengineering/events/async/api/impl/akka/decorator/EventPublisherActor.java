@@ -20,6 +20,7 @@ package com.smartitengineering.events.async.api.impl.akka.decorator;
 
 import akka.actor.TypedActor;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.smartitengineering.events.async.api.EventPublisher;
 
 /**
@@ -29,6 +30,7 @@ import com.smartitengineering.events.async.api.EventPublisher;
 public class EventPublisherActor extends TypedActor implements EventPublisher {
 
   @Inject
+  @Named("decorateePublisher")
   private EventPublisher publisher;
 
   public boolean publishEvent(String eventContentType, String eventMessage) {

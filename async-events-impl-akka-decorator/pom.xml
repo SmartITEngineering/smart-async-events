@@ -41,6 +41,14 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.jmock</groupId>
+      <artifactId>jmock-junit3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <artifactId>akka-remote</artifactId>
+    </dependency>
   </dependencies>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

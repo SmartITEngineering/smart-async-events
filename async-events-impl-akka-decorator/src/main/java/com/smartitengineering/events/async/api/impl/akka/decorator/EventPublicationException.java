@@ -22,7 +22,7 @@ package com.smartitengineering.events.async.api.impl.akka.decorator;
  *
  * @author imyousuf
  */
-public class EventPublicationException extends Exception {
+public class EventPublicationException extends RuntimeException {
 
   public EventPublicationException(Throwable cause) {
     super(cause);

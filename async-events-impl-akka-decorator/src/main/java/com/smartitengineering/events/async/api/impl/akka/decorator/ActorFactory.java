@@ -67,6 +67,13 @@ public final class ActorFactory {
     final int retryTimeout = NumberUtils.toInt(properties.getProperty(RETRY_TIMEOUT), 2000);
     final int supervisionTimeout = NumberUtils.toInt(properties.getProperty(SUPERVISION_TIMEOUT), 2000);
     if (Boolean.parseBoolean(properties.getProperty(REMOTING))) {
+      remote = true;
+      manager = null;
+      remoteServiceId = properties.getProperty(REMOTE_SERVICE_ID);
+      remoteAddress = properties.getProperty(REMOTE_ADDR);
+      remotePort = NumberUtils.toInt(properties.getProperty(REMOTE_PORT), 30000);
+    }
+    else {
       remote = false;
       manager = new TypedActorConfigurator();
       manager.configure(new OneForOneStrategy(new Class[]{EventPublicationException.class}, retryAttempts, retryTimeout),
@@ -136,13 +143,6 @@ public final class ActorFactory {
       remoteServiceId = null;
       remoteAddress = null;
       remotePort = null;
-    }
-    else {
-      remote = true;
-      manager = null;
-      remoteServiceId = properties.getProperty(REMOTE_SERVICE_ID);
-      remoteAddress = properties.getProperty(REMOTE_ADDR);
-      remotePort = NumberUtils.toInt(properties.getProperty(REMOTE_PORT), 30000);
     }
     /*
      * Bootstrap

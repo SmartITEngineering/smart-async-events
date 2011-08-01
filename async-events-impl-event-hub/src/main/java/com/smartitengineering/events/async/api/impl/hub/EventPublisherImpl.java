@@ -41,14 +41,25 @@ public class EventPublisherImpl implements EventPublisher {
   @Inject
   @Named("channelHubUri")
   private String eventHubChannelHubUri;
-  private final Client cacheableClient = CacheableClient.create();
+  @Inject(optional = true)
+  @Named("pubClient")
+  private Client cacheableClient;
   private WebResource channelHubResource;
   protected final transient Logger logger = LoggerFactory.getLogger(getClass());
+
+  protected Client getClient() {
+    if (cacheableClient == null) {
+      return CacheableClient.create();
+    }
+    else {
+      return cacheableClient;
+    }
+  }
 
   @Override
   public boolean publishEvent(String eventContentType, String eventMessage) {
     if (channelHubResource == null) {
-      channelHubResource = cacheableClient.resource(eventHubChannelHubUri);
+      channelHubResource = getClient().resource(eventHubChannelHubUri);
     }
     if (logger.isInfoEnabled()) {
       logger.info("Publishing message " + eventContentType + " of type " + eventContentType);

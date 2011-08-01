@@ -22,7 +22,7 @@
   <parent>
     <groupId>com.smartitengineering</groupId>
     <artifactId>smart-core</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.9-SNAPSHOT</version>
   </parent>
   <groupId>com.smartitengineering</groupId>
   <artifactId>smart-async-events</artifactId>
@@ -85,5 +85,6 @@
   <modules>
     <module>async-events-api</module>
     <module>async-events-impl-event-hub</module>
+    <module>async-events-impl-akka-decorator</module>
   </modules>
 </project>

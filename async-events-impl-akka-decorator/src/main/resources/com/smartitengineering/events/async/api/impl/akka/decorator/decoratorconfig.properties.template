@@ -1,0 +1,5 @@
+#Specify some module class when using it
+#moduleClass=
+retryAttempts=10
+retryTimeout=2000
+supervisionTimeout=2000

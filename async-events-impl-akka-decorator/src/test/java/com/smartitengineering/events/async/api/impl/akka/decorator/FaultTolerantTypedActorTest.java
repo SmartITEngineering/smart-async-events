@@ -18,6 +18,10 @@
  */
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
+import akka.config.Supervision;
+import akka.config.Supervision.OneForOneStrategy;
+import akka.config.Supervision.SuperviseTypedActor;
+import akka.config.TypedActorConfigurator;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.smartitengineering.events.async.api.EventPublisher;
@@ -28,14 +32,17 @@ import org.jmock.Sequence;
 import org.jmock.integration.junit3.JUnit3Mockery;
 
 /**
- * Unit test for simple App.
+ *
+ * @author imyousuf
  */
-public class AppTest extends TestCase {
+public class FaultTolerantTypedActorTest extends TestCase {
 
   private static final Mockery mockery = new JUnit3Mockery();
   private static final EventPublisher mock = mockery.mock(EventPublisher.class);
+  private TypedActorConfigurator manager;
 
-  public void testTypedActorBasedImplementationWithFailures() {
+  @Override
+  public void setUp() {
     mockery.checking(new Expectations() {
 
       {
@@ -48,8 +55,16 @@ public class AppTest extends TestCase {
         inSequence(sequence);
       }
     });
-    EventPublisher publisher = new EventPublisherImpl();
-    publisher.publishEvent("a", "a");
+    manager = new TypedActorConfigurator();
+    manager = manager.configure(new OneForOneStrategy(new Class[]{EventPublicationException.class}, 10, 2000),
+                                new SuperviseTypedActor[]{new SuperviseTypedActor(EventPublisher.class,
+                                                                                  EventPublisherActor.class,
+                                                                                  Supervision.permanent(), 2000)}).
+        addExternalGuiceModule(new Module()).inject().supervise();
+  }
+
+  public void testTypedFaultTolerance() {
+    manager.getInstance(EventPublisher.class).publishEvent("a", "a");
   }
 
   public static class Module extends AbstractModule {

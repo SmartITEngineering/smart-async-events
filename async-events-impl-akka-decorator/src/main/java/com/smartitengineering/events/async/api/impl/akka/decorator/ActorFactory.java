@@ -61,8 +61,7 @@ public final class ActorFactory {
   private static final String REMOTE_PORT = "remotePort";
   private static final String REMOTE_SERVICE_ID = "serviceId";
 
-  public ActorFactory() {
-    final Properties properties = loadProperties(CONFIG_PATH);
+  protected ActorFactory(final Properties properties) {
     final int retryAttempts = NumberUtils.toInt(properties.getProperty(RETRY_ATTEMPTS), 10);
     final int retryTimeout = NumberUtils.toInt(properties.getProperty(RETRY_TIMEOUT), 2000);
     final int supervisionTimeout = NumberUtils.toInt(properties.getProperty(SUPERVISION_TIMEOUT), 2000);
@@ -83,61 +82,10 @@ public final class ActorFactory {
       final String moduleClassStr = properties.getProperty(MODULE_CLASS);
       if (StringUtils.isNotBlank(moduleClassStr)) {
         Module module = null;
-        final Class clazz;
-        try {
-          clazz = Class.forName(StringUtils.trim(moduleClassStr), true, Thread.currentThread().getContextClassLoader());
+        module = getGuiceModule(moduleClassStr, properties);
+        if (module != null) {
+          manager.addExternalGuiceModule(module).inject();
         }
-        catch (ClassNotFoundException ex) {
-          throw new IllegalStateException(ex);
-        }
-        if (!Module.class.isAssignableFrom(clazz)) {
-          throw new IllegalArgumentException("Specified class not instance of Module");
-        }
-        Class<? extends Module> moduleClass = clazz;
-        boolean foundConstructor = false;
-        Constructor<? extends Module> defaultContructor;
-        try {
-          defaultContructor = moduleClass.getConstructor();
-          module = defaultContructor.newInstance();
-          foundConstructor = true;
-        }
-        catch (InstantiationException ex) {
-          throw new IllegalStateException(ex);
-        }
-        catch (IllegalAccessException ex) {
-          throw new IllegalStateException(ex);
-        }
-        catch (InvocationTargetException ex) {
-          throw new IllegalStateException(ex);
-        }
-        catch (NoSuchMethodException ex) {
-        }
-        catch (SecurityException ex) {
-        }
-        if (!foundConstructor) {
-          try {
-            defaultContructor = moduleClass.getConstructor(Properties.class);
-            module = defaultContructor.newInstance(properties);
-            foundConstructor = true;
-          }
-          catch (InstantiationException ex) {
-            throw new IllegalStateException(ex);
-          }
-          catch (IllegalAccessException ex) {
-            throw new IllegalStateException(ex);
-          }
-          catch (InvocationTargetException ex) {
-            throw new IllegalStateException(ex);
-          }
-          catch (NoSuchMethodException ex) {
-          }
-          catch (SecurityException ex) {
-          }
-        }
-        if (!foundConstructor) {
-          throw new IllegalStateException("No supported contructors found - no args and with a properties obj!");
-        }
-        manager.addExternalGuiceModule(module).inject();
       }
       manager.supervise();
       remoteServiceId = null;
@@ -156,6 +104,70 @@ public final class ActorFactory {
       supervisor = supervisorFactory.newInstance();
       supervisor.start();
     }
+  }
+
+  public ActorFactory() {
+    this(loadProperties(CONFIG_PATH));
+  }
+
+  protected final Module getGuiceModule(final String moduleClassStr, final Properties properties) throws
+      IllegalArgumentException, IllegalStateException {
+    Module module = null;
+    final Class clazz;
+    try {
+      clazz = Class.forName(StringUtils.trim(moduleClassStr), true, Thread.currentThread().getContextClassLoader());
+    }
+    catch (ClassNotFoundException ex) {
+      throw new IllegalStateException(ex);
+    }
+    if (!Module.class.isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException("Specified class not instance of Module");
+    }
+    Class<? extends Module> moduleClass = clazz;
+    boolean foundConstructor = false;
+    Constructor<? extends Module> defaultContructor;
+    try {
+      defaultContructor = moduleClass.getConstructor();
+      module = defaultContructor.newInstance();
+      foundConstructor = true;
+    }
+    catch (InstantiationException ex) {
+      throw new IllegalStateException(ex);
+    }
+    catch (IllegalAccessException ex) {
+      throw new IllegalStateException(ex);
+    }
+    catch (InvocationTargetException ex) {
+      throw new IllegalStateException(ex);
+    }
+    catch (NoSuchMethodException ex) {
+    }
+    catch (SecurityException ex) {
+    }
+    if (!foundConstructor) {
+      try {
+        defaultContructor = moduleClass.getConstructor(Properties.class);
+        module = defaultContructor.newInstance(properties);
+        foundConstructor = true;
+      }
+      catch (InstantiationException ex) {
+        throw new IllegalStateException(ex);
+      }
+      catch (IllegalAccessException ex) {
+        throw new IllegalStateException(ex);
+      }
+      catch (InvocationTargetException ex) {
+        throw new IllegalStateException(ex);
+      }
+      catch (NoSuchMethodException ex) {
+      }
+      catch (SecurityException ex) {
+      }
+    }
+    if (!foundConstructor) {
+      throw new IllegalStateException("No supported contructors found - no args and with a properties obj!");
+    }
+    return module;
   }
 
   public EventPublisher getInstance() {
@@ -178,7 +190,8 @@ public final class ActorFactory {
     }
   }
 
-  protected final Properties loadProperties(String propFile) throws IllegalArgumentException, IllegalStateException {
+  protected static Properties loadProperties(String propFile) throws IllegalArgumentException,
+                                                                     IllegalStateException {
     if (StringUtils.isBlank(propFile)) {
       throw new IllegalArgumentException("Properties file location can not be blank!");
     }

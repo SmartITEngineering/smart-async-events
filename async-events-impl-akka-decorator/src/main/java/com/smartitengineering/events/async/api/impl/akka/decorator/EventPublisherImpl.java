@@ -19,6 +19,8 @@
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
 import com.smartitengineering.events.async.api.EventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -26,7 +28,10 @@ import com.smartitengineering.events.async.api.EventPublisher;
  */
 public class EventPublisherImpl implements EventPublisher {
 
+  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
+
   public boolean publishEvent(String eventContentType, String eventMessage) {
+    logger.info("Passing to actor factory publisher");
     return ActorFactory.getActorRef().publishEvent(eventContentType, eventMessage);
   }
 }

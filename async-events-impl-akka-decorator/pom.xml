@@ -30,12 +30,20 @@
       <artifactId>akka-typed-actor</artifactId>
     </dependency>
     <dependency>
+      <groupId>se.scalablesolutions.akka</groupId>
+      <artifactId>akka-remote</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.smartitengineering.smart-util</groupId>
       <artifactId>smart-bean-util</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -46,8 +54,9 @@
       <artifactId>jmock-junit3</artifactId>
     </dependency>
     <dependency>
-      <groupId>se.scalablesolutions.akka</groupId>
-      <artifactId>akka-remote</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <properties>

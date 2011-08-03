@@ -18,13 +18,19 @@
  */
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  *
  * @author imyousuf
  */
 public class EventPublicationException extends RuntimeException {
 
+  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
+
   public EventPublicationException(Throwable cause) {
     super(cause);
+    logger.info("Wrapping exception for fault tolerant handling", cause);
   }
 }

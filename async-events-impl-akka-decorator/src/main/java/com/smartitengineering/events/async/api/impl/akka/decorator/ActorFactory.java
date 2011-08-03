@@ -36,6 +36,8 @@ import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -50,6 +52,7 @@ public final class ActorFactory {
   private final boolean remote;
   private final SupervisorFactory supervisorFactory;
   private final Supervisor supervisor;
+  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
   private static final String CONFIG_PATH =
                               "com/smartitengineering/events/async/api/impl/akka/decorator/decoratorconfig.properties";
   private static final String MODULE_CLASS = "moduleClass";
@@ -65,7 +68,15 @@ public final class ActorFactory {
     final int retryAttempts = NumberUtils.toInt(properties.getProperty(RETRY_ATTEMPTS), 10);
     final int retryTimeout = NumberUtils.toInt(properties.getProperty(RETRY_TIMEOUT), 2000);
     final int supervisionTimeout = NumberUtils.toInt(properties.getProperty(SUPERVISION_TIMEOUT), 2000);
-    if (Boolean.parseBoolean(properties.getProperty(REMOTING))) {
+    final boolean remoting = Boolean.parseBoolean(properties.getProperty(REMOTING));
+    if (logger.isDebugEnabled()) {
+      logger.debug("Retry Attempts " + retryAttempts);
+      logger.debug("Retry Timeout " + retryTimeout);
+      logger.debug("Supervision Timeout " + supervisionTimeout);
+      logger.debug("Remoting " + remoting);
+    }
+    if (remoting) {
+      logger.info("Setting up remote actor retrieval configuration");
       remote = true;
       manager = null;
       remoteServiceId = properties.getProperty(REMOTE_SERVICE_ID);
@@ -73,6 +84,7 @@ public final class ActorFactory {
       remotePort = NumberUtils.toInt(properties.getProperty(REMOTE_PORT), 30000);
     }
     else {
+      logger.info("Setting up typed actor configuration");
       remote = false;
       manager = new TypedActorConfigurator();
       manager.configure(new OneForOneStrategy(new Class[]{EventPublicationException.class}, retryAttempts, retryTimeout),
@@ -84,9 +96,11 @@ public final class ActorFactory {
         Module module = null;
         module = getGuiceModule(moduleClassStr, properties);
         if (module != null) {
+          logger.info("Performing Google Guice injection");
           manager.addExternalGuiceModule(module).inject();
         }
       }
+      logger.info("Start supervision");
       manager.supervise();
       remoteServiceId = null;
       remoteAddress = null;
@@ -96,6 +110,7 @@ public final class ActorFactory {
      * Bootstrap
      */
     {
+      logger.info("Bootstrap supervision factory for the untyped actor");
       supervisorFactory =
       new SupervisorFactory(new Supervision.SupervisorConfig(new OneForOneStrategy(new Class[]{
             EventPublicationException.class}, retryAttempts, retryTimeout),
@@ -172,6 +187,7 @@ public final class ActorFactory {
 
   public EventPublisher getInstance() {
     if (remote) {
+      logger.info("Returning untyped actor wrapped in a proxy publisher");
       return new EventPublisher() {
 
         public boolean publishEvent(String eventContentType, String eventMessage) {
@@ -186,6 +202,7 @@ public final class ActorFactory {
       };
     }
     else {
+      logger.info("Returning typed actor as publisher");
       return manager.getInstance(EventPublisher.class);
     }
   }

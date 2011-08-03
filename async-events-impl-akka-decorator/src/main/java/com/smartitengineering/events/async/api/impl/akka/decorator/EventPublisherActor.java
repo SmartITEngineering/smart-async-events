@@ -22,6 +22,8 @@ import akka.actor.TypedActor;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.smartitengineering.events.async.api.EventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -32,8 +34,10 @@ public class EventPublisherActor extends TypedActor implements EventPublisher {
   @Inject
   @Named("decorateePublisher")
   private EventPublisher publisher;
+  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
 
   public boolean publishEvent(String eventContentType, String eventMessage) {
+    logger.info("Invoking the injected publisher, which is fault tolerant");
     return publisher.publishEvent(eventContentType, eventMessage);
   }
 }

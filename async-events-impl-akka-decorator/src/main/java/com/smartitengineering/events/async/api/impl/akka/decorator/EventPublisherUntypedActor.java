@@ -19,6 +19,8 @@
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
 import akka.actor.UntypedActor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -26,10 +28,13 @@ import akka.actor.UntypedActor;
  */
 public class EventPublisherUntypedActor extends UntypedActor {
 
+  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
+
   @Override
   public void onReceive(Object o) throws Exception {
     if (o instanceof EventMessage) {
       EventMessage message = (EventMessage) o;
+      logger.info("Invoking from untyped actor to publish the event and passing its return-obj as unsafe message");
       getContext().replyUnsafe(Boolean.toString(ActorFactory.getActorRef().publishEvent(message.getEventType(), message.
           getMessage())));
     }

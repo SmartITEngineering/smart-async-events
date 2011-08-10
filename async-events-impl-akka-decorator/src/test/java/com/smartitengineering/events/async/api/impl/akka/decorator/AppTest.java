@@ -32,8 +32,8 @@ import org.jmock.integration.junit3.JUnit3Mockery;
  */
 public class AppTest extends TestCase {
 
-  private static final Mockery mockery = new JUnit3Mockery();
-  private static final EventPublisher mock = mockery.mock(EventPublisher.class);
+  static final Mockery mockery = new JUnit3Mockery();
+  static final EventPublisher mock = mockery.mock(EventPublisher.class);
 
   public void testTypedActorBasedImplementationWithFailures() {
     mockery.checking(new Expectations() {
@@ -50,6 +50,7 @@ public class AppTest extends TestCase {
     });
     EventPublisher publisher = new EventPublisherImpl();
     publisher.publishEvent("a", "a");
+    mockery.assertIsSatisfied();
   }
 
   public static class Module extends AbstractModule {

@@ -6,6 +6,6 @@ supervisionTimeout=2000
 #turn the remoting mode to true to enable remote actors
 remoting=false
 #following will take effect if and only if 'remoting' is 'true'
-remoteAddress=somehost
+remoteAddress=localhost
 remotePort=30000
 serviceId=publishingService

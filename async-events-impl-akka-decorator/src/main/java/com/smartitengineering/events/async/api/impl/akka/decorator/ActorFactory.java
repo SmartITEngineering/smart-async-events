@@ -18,6 +18,7 @@
  */
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
+import com.smartitengineering.events.async.api.EventPublicationException;
 import akka.actor.Actors;
 import akka.actor.Supervisor;
 import akka.actor.SupervisorFactory;

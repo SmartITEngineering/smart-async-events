@@ -16,10 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.smartitengineering.events.async.api.impl.akka.decorator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.smartitengineering.events.async.api;
 
 /**
  *
@@ -27,10 +24,7 @@ import org.slf4j.LoggerFactory;
  */
 public class EventPublicationException extends RuntimeException {
 
-  protected transient final Logger logger = LoggerFactory.getLogger(getClass());
-
   public EventPublicationException(Throwable cause) {
     super(cause);
-    logger.info("Wrapping exception for fault tolerant handling", cause);
   }
 }

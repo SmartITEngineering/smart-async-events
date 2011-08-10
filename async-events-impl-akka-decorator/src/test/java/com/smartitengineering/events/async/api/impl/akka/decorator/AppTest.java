@@ -18,6 +18,7 @@
  */
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
+import com.smartitengineering.events.async.api.EventPublicationException;
 import com.google.inject.AbstractModule;
 import com.google.inject.name.Names;
 import com.smartitengineering.events.async.api.EventPublisher;

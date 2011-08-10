@@ -18,62 +18,47 @@
  */
 package com.smartitengineering.events.async.api.impl.akka.decorator;
 
+import akka.actor.TypedActor;
 import akka.config.Supervision;
 import akka.config.Supervision.OneForOneStrategy;
 import akka.config.Supervision.SuperviseTypedActor;
 import akka.config.TypedActorConfigurator;
-import com.google.inject.AbstractModule;
-import com.google.inject.name.Names;
 import com.smartitengineering.events.async.api.EventPublisher;
+import java.util.concurrent.atomic.AtomicInteger;
 import junit.framework.TestCase;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.Sequence;
-import org.jmock.integration.junit3.JUnit3Mockery;
 
 /**
  *
  * @author imyousuf
  */
-public class FaultTolerantTypedActorTest extends TestCase {
+public class SimpleFaultTolerantTypedActorTest extends TestCase {
 
-  private static final Mockery mockery = new JUnit3Mockery();
-  private static final EventPublisher mock = mockery.mock(EventPublisher.class);
+  private static final AtomicInteger mutableInt = new AtomicInteger(0);
 
   @Override
   public void setUp() {
-    mockery.checking(new Expectations() {
-
-      {
-        Sequence sequence = mockery.sequence("name");
-        exactly(3).of(mock).publishEvent("a", "a");
-        will(throwException(new EventPublicationException(new NullPointerException())));
-        inSequence(sequence);
-        exactly(1).of(mock).publishEvent("a", "a");
-        will(returnValue(true));
-        inSequence(sequence);
-      }
-    });
+    mutableInt.set(0);
   }
 
-  public void testTypedFaultTolerance() {
+  public static class SimpleEventPublisher extends TypedActor implements EventPublisher {
+
+    public boolean publishEvent(String eventContentType, String eventMessage) {
+      if (mutableInt.addAndGet(1) < 4) {
+        throw new EventPublicationException(new NullPointerException("Custom NPE!"));
+      }
+      return true;
+    }
+  }
+
+  public void testSimpleTypedFaultTolerance() {
     TypedActorConfigurator manager;
     manager = new TypedActorConfigurator();
     manager = manager.configure(new OneForOneStrategy(new Class[]{EventPublicationException.class}, 10, 2000),
                                 new SuperviseTypedActor[]{new SuperviseTypedActor(EventPublisher.class,
-                                                                                  EventPublisherActor.class,
+                                                                                  SimpleEventPublisher.class,
                                                                                   Supervision.permanent(), 2000)}).
-        addExternalGuiceModule(new Module()).inject().supervise();
+        supervise();
     final EventPublisher instance = manager.getInstance(EventPublisher.class);
     instance.publishEvent("a", "a");
-  }
-
-  public static class Module extends AbstractModule {
-
-    @Override
-    protected void configure() {
-
-      bind(EventPublisher.class).annotatedWith(Names.named("decorateePublisher")).toInstance(mock);
-    }
   }
 }

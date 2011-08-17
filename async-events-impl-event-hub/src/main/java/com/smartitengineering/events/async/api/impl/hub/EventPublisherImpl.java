@@ -21,11 +21,13 @@ package com.smartitengineering.events.async.api.impl.hub;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.smartitengineering.events.async.api.EventPublicationException;
 import com.smartitengineering.events.async.api.EventPublisher;
 import com.smartitengineering.util.rest.client.jersey.cache.CacheableClient;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
@@ -64,11 +66,33 @@ public class EventPublisherImpl implements EventPublisher {
     if (logger.isInfoEnabled()) {
       logger.info("Publishing message " + eventContentType + " of type " + eventContentType);
     }
-    ClientResponse response = channelHubResource.accept(MediaType.MEDIA_TYPE_WILDCARD).header(HttpHeaders.CONTENT_TYPE,
-                                                                                              eventContentType).post(
-        ClientResponse.class, eventMessage);
-    final int status = response.getStatus();
-    response.close();
-    return status >= 200 && status < 400;
+    ClientResponse response = null;
+    WebApplicationException webApplicationException = null;
+    int status;
+    try {
+      response = channelHubResource.accept(MediaType.MEDIA_TYPE_WILDCARD).header(HttpHeaders.CONTENT_TYPE,
+                                                                                 eventContentType).post(
+          ClientResponse.class, eventMessage);
+      status = response.getStatus();
+      response.close();
+      return status >= 200 && status < 400;
+    }
+    catch (WebApplicationException exception) {
+      logger.warn("Could not post event!", exception);
+      webApplicationException = exception;
+      status = webApplicationException.getResponse().getStatus();
+      if (response != null) {
+        response.close();
+      }
+    }
+    if (status >= 200 && status < 400) {
+      return true;
+    }
+    if (status >= 500) {
+      throw new EventPublicationException(webApplicationException);
+    }
+    else {
+      return false;
+    }
   }
 }

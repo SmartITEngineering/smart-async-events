@@ -120,6 +120,7 @@ public class EventSubscriberImpl implements EventSubscriber {
 
   @Override
   public void poll() {
+    logger.info("Polling for new events");
     if (getPreconditionChecker() != null && !getPreconditionChecker().isPreconditionMet()) {
       logger.warn("Aborting poll as pre-condition for polling not met!");
     }
@@ -128,16 +129,16 @@ public class EventSubscriberImpl implements EventSubscriber {
     boolean traverseOlder = false;
     final String nextUri = storer.getNextUri();
     if (StringUtils.isBlank(nextUri)) {
-      if (logger.isInfoEnabled()) {
-        logger.info("URI being polled is " + eventAtomFeedUri);
+      if (logger.isDebugEnabled()) {
+        logger.debug("URI being polled is " + eventAtomFeedUri);
       }
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(eventAtomFeedUri),
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
       traverseOlder = true;
     }
     else {
-      if (logger.isInfoEnabled()) {
-        logger.info("URI being polled is " + nextUri);
+      if (logger.isDebugEnabled()) {
+        logger.debug("URI being polled is " + nextUri);
       }
       resource = new ChannelEventsResource(ClientUtil.createResourceLink("events", URI.create(nextUri),
                                                                          MediaType.APPLICATION_ATOM_XML), factory);
@@ -147,8 +148,8 @@ public class EventSubscriberImpl implements EventSubscriber {
       for (final EventConsumer consumer : consumers) {
         consumer.endConsumption(!prematureEnd);
       }
-      if (logger.isInfoEnabled()) {
-        logger.info("" + integer.get() + " Events processed");
+      if (logger.isDebugEnabled()) {
+        logger.debug("" + integer.get() + " Events processed");
       }
     }
   }
@@ -164,8 +165,8 @@ public class EventSubscriberImpl implements EventSubscriber {
   }
 
   private boolean processFeed(ChannelEventsResource resource, boolean traverseOlder) {
-    if (logger.isInfoEnabled()) {
-      logger.info("RESOURCE being processed is " + resource.getUri().toASCIIString());
+    if (logger.isDebugEnabled()) {
+      logger.debug("RESOURCE being processed is " + resource.getUri().toASCIIString());
     }
     final Feed lastReadStateOfEntity = resource.getLastReadStateOfEntity();
     final List<Entry> entries = lastReadStateOfEntity == null ? Collections.<Entry>emptyList() : lastReadStateOfEntity.

@@ -68,8 +68,9 @@ public class FileSystemUriStorer implements UriStorer {
   public final void storeNextUri(String uri) {
     try {
       writingInProgressMutex.acquire();
-      if (logger.isInfoEnabled()) {
-        logger.info("URI being stored is " + uri);
+      logger.info("New URI being stored");
+      if (logger.isDebugEnabled()) {
+        logger.debug("URI being stored is " + uri);
       }
       BufferedWriter writer = new BufferedWriter(new FileWriter(uriStorage, false));
       writer.write(uri);

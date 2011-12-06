@@ -60,11 +60,12 @@ public class EventPublisherImpl implements EventPublisher {
 
   @Override
   public boolean publishEvent(String eventContentType, String eventMessage) {
+    logger.info("Publishing event");
     if (channelHubResource == null) {
       channelHubResource = getClient().resource(eventHubChannelHubUri);
     }
-    if (logger.isInfoEnabled()) {
-      logger.info("Publishing message " + eventContentType + " of type " + eventContentType);
+    if (logger.isDebugEnabled()) {
+      logger.debug("Publishing message " + eventContentType + " of type " + eventContentType);
     }
     ClientResponse response = null;
     WebApplicationException webApplicationException = null;

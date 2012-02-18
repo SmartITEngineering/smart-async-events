@@ -79,6 +79,17 @@ public class EventSubscriberImpl implements EventSubscriber {
   private SubscriptionPreconditionChecker checker;
   @Inject
   private final UriStorer storer;
+  @Inject(optional=true)
+  @Named("subscribePollName")
+  private String pollName = "poll";
+  @Inject(optional=true)
+  @Named("subscribePollJobName")
+  private String pollJobName = "pollJob";
+  @Inject(optional=true)
+  @Named("subscribePollTriggerName")
+  private String pollTriggerName = "pollTrigger";
+  @Named("subscribePollListenerName")
+  private String pollListenerName = "poll-listener";
   private AtomicInteger integer = new AtomicInteger(0);
   protected final transient Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -222,9 +233,9 @@ public class EventSubscriberImpl implements EventSubscriber {
     Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
     final CronPollListener cronPollListener = new CronPollListener();
     scheduler.addTriggerListener(cronPollListener);
-    JobDetail detail = new JobDetail("pollJob", "poll", NoOpJob.class);
-    Trigger trigger = new CronTrigger("pollTrigger", "poll", cronExpression);
-    trigger.addTriggerListener("poll-listener");
+    JobDetail detail = new JobDetail(pollJobName, pollName, NoOpJob.class);
+    Trigger trigger = new CronTrigger(pollTriggerName, pollName, cronExpression);
+    trigger.addTriggerListener(pollListenerName);
     scheduler.start();
     scheduler.scheduleJob(detail, trigger);
   }
@@ -245,7 +256,7 @@ public class EventSubscriberImpl implements EventSubscriber {
 
     @Override
     public String getName() {
-      return "poll-listener";
+      return pollListenerName;
     }
 
     @Override

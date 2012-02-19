@@ -79,17 +79,8 @@ public class EventSubscriberImpl implements EventSubscriber {
   private SubscriptionPreconditionChecker checker;
   @Inject
   private final UriStorer storer;
-  @Inject(optional=true)
-  @Named("subscribePollName")
-  private String pollName = "poll";
-  @Inject(optional=true)
-  @Named("subscribePollJobName")
-  private String pollJobName = "pollJob";
-  @Inject(optional=true)
-  @Named("subscribePollTriggerName")
-  private String pollTriggerName = "pollTrigger";
-  @Named("subscribePollListenerName")
-  private String pollListenerName = "poll-listener";
+  @Inject(optional = true)
+  private PollNameConfig pollNameConfig;
   private AtomicInteger integer = new AtomicInteger(0);
   protected final transient Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -105,7 +96,6 @@ public class EventSubscriberImpl implements EventSubscriber {
     this.factory = ApplicationWideClientFactoryImpl.getClientFactory(this.config, new ConfigProcessorImpl());
     this.storer = storer;
     setInitialConsumers(consumers);
-    initCronJob();
   }
 
   public final void setInitialConsumers(Collection<EventConsumer> consumers) {
@@ -229,7 +219,25 @@ public class EventSubscriberImpl implements EventSubscriber {
     }
   }
 
-  private void initCronJob() throws Exception {
+  @Inject
+  public void initCronJob() throws Exception {
+    String pollName, pollJobName, pollTriggerName, pollListenerName;
+    if (pollNameConfig != null) {
+      pollName = pollNameConfig.getPollName();
+      pollJobName = pollNameConfig.getPollJobName();
+      pollTriggerName = pollNameConfig.getPollTriggerName();
+      pollListenerName = pollNameConfig.getPollListenerName();
+    }
+    else {
+      logger.warn("No poll name configuration provided");
+      pollName = "poll";
+      pollJobName = "pollJob";
+      pollTriggerName = "pollTrigger";
+      pollListenerName = "pollListener";
+    }
+    logger.info(new StringBuilder("Starting Job with Poll Name ").append(pollName).append(", Poll JOB Name ").append(
+        pollJobName).append(", Poll Trigger Name ").append(pollTriggerName).append(" and Poll Listener Name ").append(
+        pollListenerName).toString());
     Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
     final CronPollListener cronPollListener = new CronPollListener();
     scheduler.addTriggerListener(cronPollListener);
@@ -256,7 +264,7 @@ public class EventSubscriberImpl implements EventSubscriber {
 
     @Override
     public String getName() {
-      return pollListenerName;
+      return pollNameConfig == null ? "pollListener" : pollNameConfig.getPollListenerName();
     }
 
     @Override
@@ -348,6 +356,54 @@ public class EventSubscriberImpl implements EventSubscriber {
     @Override
     protected ChannelEventsResource instantiatePageableResource(ResourceLink link) {
       return new ChannelEventsResource(this, link, getClientFactory());
+    }
+  }
+
+  public static class PollNameConfig {
+
+    @Inject
+    @Named("subscribePollName")
+    private String pollName;
+    @Inject
+    @Named("subscribePollJobName")
+    private String pollJobName;
+    @Inject
+    @Named("subscribePollTriggerName")
+    private String pollTriggerName;
+    @Inject
+    @Named("subscribePollListenerName")
+    private String pollListenerName;
+
+    public String getPollJobName() {
+      return pollJobName;
+    }
+
+    public void setPollJobName(String pollJobName) {
+      this.pollJobName = pollJobName;
+    }
+
+    public String getPollListenerName() {
+      return pollListenerName;
+    }
+
+    public void setPollListenerName(String pollListenerName) {
+      this.pollListenerName = pollListenerName;
+    }
+
+    public String getPollName() {
+      return pollName;
+    }
+
+    public void setPollName(String pollName) {
+      this.pollName = pollName;
+    }
+
+    public String getPollTriggerName() {
+      return pollTriggerName;
+    }
+
+    public void setPollTriggerName(String pollTriggerName) {
+      this.pollTriggerName = pollTriggerName;
     }
   }
 }

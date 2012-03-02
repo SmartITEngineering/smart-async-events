@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 public class EventSubscriberImpl implements EventSubscriber {
-
+  
   private final List<EventConsumer> consumers = Collections.synchronizedList(new ArrayList<EventConsumer>());
   private final String cronExpression;
   private final String eventAtomFeedUri;
@@ -83,7 +83,7 @@ public class EventSubscriberImpl implements EventSubscriber {
   private PollNameConfig pollNameConfig;
   private AtomicInteger integer = new AtomicInteger(0);
   protected final transient Logger logger = LoggerFactory.getLogger(getClass());
-
+  
   @Inject
   public EventSubscriberImpl(@Named("subscribtionCronExpression") String cronExpression,
                              @Named("eventAtomFeedUri") String eventAtomFeedUri,
@@ -97,28 +97,28 @@ public class EventSubscriberImpl implements EventSubscriber {
     this.storer = storer;
     setInitialConsumers(consumers);
   }
-
+  
   public final void setInitialConsumers(Collection<EventConsumer> consumers) {
     if (consumers != null && !consumers.isEmpty()) {
       this.consumers.addAll(consumers);
     }
   }
-
+  
   @Override
   public void addConsumer(EventConsumer consumer) {
     consumers.add(consumer);
   }
-
+  
   @Override
   public void removeConsumer(EventConsumer consumer) {
     consumers.remove(consumer);
   }
-
+  
   @Override
   public void removeAllConsumers() {
     consumers.clear();
   }
-
+  
   @Override
   public void poll() {
     logger.info("Polling for new events");
@@ -154,17 +154,17 @@ public class EventSubscriberImpl implements EventSubscriber {
       }
     }
   }
-
+  
   @Override
   public Collection<EventConsumer> getConsumers() {
     return Collections.unmodifiableCollection(consumers);
   }
-
+  
   @Override
   public String getCronExpressionForPollSubscription() {
     return cronExpression;
   }
-
+  
   private boolean processFeed(ChannelEventsResource resource, boolean traverseOlder) {
     if (logger.isDebugEnabled()) {
       logger.debug("RESOURCE being processed is " + resource.getUri().toASCIIString());
@@ -218,7 +218,7 @@ public class EventSubscriberImpl implements EventSubscriber {
       return true;
     }
   }
-
+  
   @Inject
   public void initCronJob() throws Exception {
     String pollName, pollJobName, pollTriggerName, pollListenerName;
@@ -247,120 +247,125 @@ public class EventSubscriberImpl implements EventSubscriber {
     scheduler.start();
     scheduler.scheduleJob(detail, trigger);
   }
-
+  
   @Override
   public SubscriptionPreconditionChecker getPreconditionChecker() {
     return checker;
   }
-
+  
   @Override
   public UriStorer getNextUriStorer() {
     return storer;
   }
-
+  
   public class CronPollListener implements TriggerListener {
-
+    
     private AtomicBoolean atomicBoolean = new AtomicBoolean(true);
-
+    
     @Override
     public String getName() {
       return pollNameConfig == null ? "pollListener" : pollNameConfig.getPollListenerName();
     }
-
+    
     @Override
     public void triggerFired(Trigger trgr, JobExecutionContext jec) {
       if (atomicBoolean.get()) {
         if (atomicBoolean.compareAndSet(true, false)) {
-          poll();
+          try {
+            poll();
+          }
+          catch (Exception ex) {
+            logger.warn("Could not execute poll", ex);
+          }
           atomicBoolean.set(true);
         }
       }
     }
-
+    
     @Override
     public boolean vetoJobExecution(Trigger trgr, JobExecutionContext jec) {
       return false;
     }
-
+    
     @Override
     public void triggerMisfired(Trigger trgr) {
     }
-
+    
     @Override
     public void triggerComplete(Trigger trgr, JobExecutionContext jec, int i) {
     }
   }
-
+  
   private static class EventResource extends AbstractClientResource<HubEvent, Resource> {
-
+    
     public EventResource(Resource referrer, ResourceLink resouceLink, ClientFactory factory) throws
         IllegalArgumentException, UniformInterfaceException {
       super(referrer, resouceLink, null, null, true, factory);
     }
-
+    
     @Override
     protected void processClientConfig(ClientConfig clientConfig) {
     }
-
+    
     @Override
     protected Resource instantiatePageableResource(ResourceLink link) {
       return null;
     }
-
+    
     @Override
     protected ResourceLink getNextUri() {
       return null;
     }
-
+    
     @Override
     protected ResourceLink getPreviousUri() {
       return null;
     }
   }
-
+  
   private static class ConfigProcessorImpl implements ConfigProcessor {
-
+    
     @Override
     public void process(ClientConfig clientConfig) {
       clientConfig.getClasses().add(FeedProvider.class);
       clientConfig.getClasses().add(JacksonJsonProvider.class);
     }
-
+    
     @Override
     public boolean equals(Object obj) {
       return obj instanceof ConfigProcessorImpl;
     }
-
+    
     @Override
     public int hashCode() {
       return 1;
     }
   }
-
+  
   private static class ChannelEventsResource extends AbstractFeedClientResource<ChannelEventsResource> {
-
+    
     public ChannelEventsResource(ResourceLink resouceLink, ClientFactory factory) throws IllegalArgumentException,
                                                                                          UniformInterfaceException {
       this(null, resouceLink, factory);
     }
-
+    
     private ChannelEventsResource(Resource referrer, ResourceLink resouceLink, ClientFactory factory) throws
         IllegalArgumentException, UniformInterfaceException {
       super(referrer, resouceLink, true, factory);
     }
-
+    
     @Override
     protected void processClientConfig(ClientConfig clientConfig) {
     }
-
+    
     @Override
     protected ChannelEventsResource instantiatePageableResource(ResourceLink link) {
       return new ChannelEventsResource(this, link, getClientFactory());
     }
   }
-
+  
   public static class PollNameConfig {
-
+    
     @Inject
     @Named("subscribePollName")
     private String pollName;
@@ -373,35 +378,35 @@ public class EventSubscriberImpl implements EventSubscriber {
     @Inject
     @Named("subscribePollListenerName")
     private String pollListenerName;
-
+    
     public String getPollJobName() {
       return pollJobName;
     }
-
+    
     public void setPollJobName(String pollJobName) {
       this.pollJobName = pollJobName;
     }
-
+    
     public String getPollListenerName() {
       return pollListenerName;
     }
-
+    
     public void setPollListenerName(String pollListenerName) {
       this.pollListenerName = pollListenerName;
     }
-
+    
     public String getPollName() {
       return pollName;
     }
-
+    
     public void setPollName(String pollName) {
       this.pollName = pollName;
     }
-
+    
     public String getPollTriggerName() {
       return pollTriggerName;
     }
-
+    
     public void setPollTriggerName(String pollTriggerName) {
       this.pollTriggerName = pollTriggerName;
     }

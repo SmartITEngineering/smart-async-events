@@ -193,7 +193,7 @@ public class EventSubscriberImpl implements EventSubscriber {
     }
     //Reverse it to get the older event first
     Collections.reverse(events);
-    if (integer.get() == 0) {
+    if (events.size() > 0 && integer.get() == 0) {
       for (final EventConsumer consumer : consumers) {
         consumer.startConsumption();
       }

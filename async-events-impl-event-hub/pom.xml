@@ -85,7 +85,7 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>com.smartitengineering.event</groupId>
-                  <artifactId>hub-db</artifactId>
+                  <artifactId>hub-rdbms</artifactId>
                   <version>${hub.version}</version>
                   <type>war</type>
                   <outputDirectory>${project.build.directory}/hub/</outputDirectory>
@@ -98,7 +98,6 @@
     </plugins>
   </build>
   <properties>
-    <hub.version>0.1-rdbms-SNAPSHOT</hub.version>
     <junit.version>4.8.2</junit.version>
   </properties>
 </project>

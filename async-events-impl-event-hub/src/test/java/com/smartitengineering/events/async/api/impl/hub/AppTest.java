@@ -149,7 +149,7 @@ public class AppTest {
       publisher.publishEvent(textPlain, message + " " + i);
     }
     LOGGER.info("Publish " + count + " more events!");
-    Thread.sleep(2500);
+    Thread.sleep(5500);
     Assert.assertEquals(count + 1, mutableInt.intValue());
     Assert.assertEquals(2, startCounter.intValue());
     Assert.assertEquals(2, endCounter.intValue());

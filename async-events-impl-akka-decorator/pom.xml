@@ -4,11 +4,11 @@
   <parent>
     <artifactId>smart-async-events</artifactId>
     <groupId>com.smartitengineering</groupId>
-    <version>0.2</version>
+    <version>0.3-SNAPSHOT</version>
   </parent>
   <groupId>com.smartitengineering.smart-async-events</groupId>
   <artifactId>async-events-impl-akka-decorator</artifactId>
-  <version>0.2</version>
+  <version>0.3-SNAPSHOT</version>
   <name>Async Events Impl - Akka Decorator</name>
   <dependencies>
     <dependency>

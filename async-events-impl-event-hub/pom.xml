@@ -4,11 +4,11 @@
   <parent>
     <artifactId>smart-async-events</artifactId>
     <groupId>com.smartitengineering</groupId>
-    <version>0.2-SNAPSHOT</version>
+    <version>0.2</version>
   </parent>
   <groupId>com.smartitengineering.smart-async-events</groupId>
   <artifactId>async-events-impl-event-hub</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.2</version>
   <name>Async Events Impl - Event Hub</name>
   <dependencies>
     <dependency>
